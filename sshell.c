@@ -2,21 +2,61 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
 
-#include "date.h"
+#define CMDLINE_MAX 512
 
-void readNextCommand(char* cmd, char *command_line);
+typedef struct {
+    char *command;
+    char **arguments;
+    
+    // these two can be unused, not every job involves redirecting or a file
+    bool direction;
+    char *fileName;
+} Job;
 
 int main(int argc, char *argv[])
 {
+    // store the command line
+    char *commands;
+    commands = (char *) malloc(CMDLINE_MAX * sizeof(char));
+    
+    Job *jobs;
+    jobs = (Job *) malloc(2 * sizeof(Job));
+    int jobIndex = 0;
+    
+    do {
+        
+        printf("sshell$: ");
+        fgets(commands, CMDLINE_MAX, stdin);
+        
+        char cmd[10];
+        char **args;
+        
+        for (int i = 0; i < strlen(commands) && commands[i] != ' '; i++) {
+            cmd[i] = commands[i];
+        }
+        
+        printf(cmd);
+        
+        for (int i = 0; i < strlen(commands) && commands[i] != '\n'; i++) {
+            
+        }
+        
+    
+    } while( 1 );
+    
+    free(commands);
+    free(jobs);
+    
+    
     /*
 	char *cmd = "/bin/date -u";
 	int retval;
 
 	//retval = system(cmd);
-	fprintf(stdout, "Return status value for '%s': %d\n", cmd, retval);*/
+	fprintf(stdout, "Return status value for '%s': %d\n", cmd, retval);
     
-    /*
     pid_t pid;
     char *cmd = "/bin/date";
     char *args[] = { cmd, "-u", NULL };
@@ -36,7 +76,7 @@ int main(int argc, char *argv[])
         perror("fork");
         exit(1);
     }
-     */
+     
     
     char *command;
     size_t command_size = 512;
@@ -80,8 +120,6 @@ int main(int argc, char *argv[])
         
         printf("%s\n", cmd);
         
-        /*
-        
         
         char *date = "date";
         
@@ -107,15 +145,15 @@ int main(int argc, char *argv[])
                 exit(1);
             }
         }
-         */
     }
-    
+    */
     
     
     
 	return EXIT_SUCCESS;
 }
 
+/*
 void readNextCommand(char* cmd, char *command_line) {
     int isSpace = 0;
     
@@ -128,4 +166,4 @@ void readNextCommand(char* cmd, char *command_line) {
             isSpace = 1;
         }
     }
-}
+}*/
