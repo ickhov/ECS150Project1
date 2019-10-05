@@ -8,8 +8,7 @@
 
 // max for each command and argument
 #define CMD_MAX 62
-#define ARG_NUM 3
-#define ARG_SIZE_MAX 450
+#define ARG_MAX 450
 
 typedef struct
 {
@@ -29,7 +28,7 @@ void initializeJobs(Job *jobs, int size)
 
         jobs[i].command = (char *)malloc(CMD_MAX * sizeof(char));
 
-        jobs[i].arguments = (char *)malloc(ARG_NUM * sizeof(char));
+        jobs[i].arguments = (char *)malloc(ARG_MAX * sizeof(char));
 
         /*
         // for execv function
@@ -163,9 +162,12 @@ int main(int argc, char *argv[])
         for (int i = 0; i < numJobs; i++)
         {
             pid_t pid;
-            char *cmd = jobs[i].command;
 
-            //
+            if (strlen(jobs[i].arguments) == 0) {
+                jobs[i].arguments = NULL;
+            }
+            
+            char *cmd = jobs[i].command;
             char *args[] = {cmd, jobs[i].arguments, NULL};
 
             pid = fork();
@@ -181,7 +183,12 @@ int main(int argc, char *argv[])
                 // parent process
                 int retval;
                 wait(&retval);
-                fprintf(stdout, "+ completed '%s %s' [%d]\n", cmd, args[1], retval);
+
+                if (args[1] == NULL) {
+                    fprintf(stdout, "+ completed '%s' [%d]\n", cmd + 5, retval);
+                } else {
+                    fprintf(stdout, "+ completed '%s %s' [%d]\n", cmd + 5, args[1], retval);
+                }
             }
             else
             {
