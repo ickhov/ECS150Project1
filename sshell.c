@@ -6,50 +6,192 @@
 
 #define CMDLINE_MAX 512
 
-typedef struct {
+// max for each command and argument
+#define CMD_MAX 62
+#define ARG_NUM 3
+#define ARG_SIZE_MAX 450
+
+typedef struct
+{
     char *command;
-    char **arguments;
-    
+    char *arguments;
+
     // these two can be unused, not every job involves redirecting or a file
     bool direction;
     char *fileName;
 } Job;
 
+void initializeJobs(Job *jobs, int size)
+{
+
+    for (int i = 0; i < size; i++)
+    {
+
+        jobs[i].command = (char *)malloc(CMD_MAX * sizeof(char));
+
+        jobs[i].arguments = (char *)malloc(ARG_NUM * sizeof(char));
+
+/*
+        // for execv function
+        // first arg is the command
+        jobs[i].arguments[0] = (char *)malloc(CMD_MAX * sizeof(char));
+
+        // second arg is argument
+        jobs[i].arguments[1] = (char *)malloc(ARG_SIZE_MAX * sizeof(char));
+
+        // third arg is always null for execv
+        jobs[i].arguments[2] = NULL;*/
+    }
+}
+
+void freeJobs(Job *jobs, int size) {
+    for (int i = 0; i < size; i++)
+    {
+        free(jobs[i].command);
+        free(jobs[i].arguments);
+        jobs[i].command = NULL;
+        jobs[i].arguments = NULL;
+    }
+}
+
+int countNumPipes(char *commandLine)
+{
+    // count number of pipes
+    int numPipe = 0;
+    char *pipeChar;
+    pipeChar = strchr(commandLine, '|');
+    while (pipeChar != NULL)
+    {
+        numPipe++;
+        pipeChar = strchr(pipeChar + 1, '|');
+    }
+
+    return numPipe;
+}
+
 int main(int argc, char *argv[])
 {
-    // store the command line
-    char *commands;
-    commands = (char *) malloc(CMDLINE_MAX * sizeof(char));
-    
-    Job *jobs;
-    jobs = (Job *) malloc(2 * sizeof(Job));
-    int jobIndex = 0;
-    
-    do {
+    do
+    {
+        // store the command line
+        char *commandLine = NULL;
+        commandLine = (char *)malloc(CMDLINE_MAX * sizeof(char));
         
+        if (commandLine == NULL)
+        {
+            exit(1);
+        }
+
+        bool isPiping = false;
+        int jobIndex = 0;
+        Job *jobs = NULL;
+
         printf("sshell$: ");
-        fgets(commands, CMDLINE_MAX, stdin);
-        
-        char cmd[10];
-        char **args;
-        
-        for (int i = 0; i < strlen(commands) && commands[i] != ' '; i++) {
-            cmd[i] = commands[i];
+        // get command line
+        fgets(commandLine, CMDLINE_MAX, stdin);
+
+        int numJobs = countNumPipes(commandLine) + 1;
+
+        // allocate space for enough jobs
+        if (jobs == NULL)
+        {
+            jobs = (Job *)malloc(numJobs * sizeof(Job));
         }
-        
-        printf(cmd);
-        
-        for (int i = 0; i < strlen(commands) && commands[i] != '\n'; i++) {
+
+        if (jobs == NULL)
+        {
+            exit(1);
+        }
+
+        // initialize all variables in each job
+        initializeJobs(jobs, numJobs);
+
+        // read command line character by character
+        for (int i = 0; i < strlen(commandLine) && commandLine[i] != '\n'; i++)
+        {
+
+            if (commandLine[i] == ' ')
+            {
+                continue;
+            }
+
+            // piping exist so set it to true and continue to true
+            if (commandLine[i] == '|')
+            {
+                isPiping = true;
+                jobIndex++;
+                continue;
+            }
+
+            if (i == 0 || isPiping)
+            {
+                // add /bin/ directory to command variable
+                strcat(jobs[jobIndex].command, "/bin/");
+                int commandIndex = 5;
+                // read the command using the same i index
+                for (; i < strlen(commandLine) && commandLine[i] != ' ' && commandLine[i] != '|'; i++)
+                {
+                    jobs[jobIndex].command[commandIndex] = commandLine[i];
+                    commandIndex++;
+                }
+
+                printf("%s\n", jobs[jobIndex].command);
+
+                // reset piping
+                if (isPiping) {
+                    isPiping = false;
+                }
+
+                // if piping exist with no space, catch it here
+                if (commandLine[i] == '|') {
+                    i--;
+                }
+
+            }
+
+            // read arguments
+        }
+
+/*
+        for (int i = 0; i < numJobs; i++)
+        {
+            //pid_t pid;
+            char *cmd = "/bin/";
+            char *fullCmd = (char *)malloc(strlen(cmd) + 1);
+
+            // concat the command to /bin/
+            strcat(fullCmd, cmd);
+            strcat(fullCmd, jobs[i].command);
+
+            printf("%s\n", fullCmd);
+
             
-        }
-        
-    
-    } while( 1 );
-    
-    free(commands);
-    free(jobs);
-    
-    
+            char *args[] = { fullCmd, "", NULL };
+            
+            pid = fork();
+            if (pid == 0) {
+                // child process
+                execv(fullCmd, args);
+                perror("execv");
+                exit(1);
+            } else if (pid > 0) {
+                // parent process
+                int retval;
+                wait(&retval);
+                fprintf(stdout, "+ completed '%s %s' [%d]\n", fullCmd, args[1], retval);
+            } else {
+                perror("fork");
+                exit(1);
+            }
+
+            free(fullCmd);
+        }*/
+
+        freeJobs(jobs, numJobs);
+        free(commandLine);
+        free(jobs);
+    } while (1);
+
     /*
 	char *cmd = "/bin/date -u";
 	int retval;
@@ -59,7 +201,7 @@ int main(int argc, char *argv[])
     
     pid_t pid;
     char *cmd = "/bin/date";
-    char *args[] = { cmd, "-u", NULL };
+    char **args = { cmd, "-u", NULL };
     
     pid = fork();
     if (pid == 0) {
@@ -147,10 +289,8 @@ int main(int argc, char *argv[])
         }
     }
     */
-    
-    
-    
-	return EXIT_SUCCESS;
+
+    return EXIT_SUCCESS;
 }
 
 /*
